@@ -7,6 +7,7 @@ public class TrainLine {
     private String start;
     private String end;
     private int stationCount;
+    private String[] stations;
 
     public TrainLine(String code, String name, String start, String end, int stationCount)
     {
@@ -15,6 +16,7 @@ public class TrainLine {
         this.start = start;
         this.end = end;
         this.stationCount = stationCount;
+        this.stations = new String[stationCount + 1];
     }
 
     /* Getters */
@@ -23,6 +25,16 @@ public class TrainLine {
     public String getStart() { return this.start; }
     public String getEnd() { return this.end; }
     public int getStationCount() { return this.stationCount; }
+    public String[] getStations() { return this.stations; }
+    public String getStation(int index) { return this.stations[index]; }
+
+
+    /*  */
+    public void addStation(int index, String station)
+    {
+        //System.out.println(this.code + " - " + station + " " + index);
+        this.stations[index] = station;
+    }
 
     /* compareTo method since we are implementing Comparable */
     public int compareTo(TrainLine o) {

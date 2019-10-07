@@ -81,7 +81,7 @@ public class Station implements Comparable<Station>{
 	public Double getLongitude() {
 		return this.longitude;
 	}
-	public ArrayList<String> getTrainLine() { return trainLine; }
+	public ArrayList<String> getTrainLines() { return trainLine; }
 	public int getNumberByLine(String line) { return stationNumber.get(line); }
 	
 	
