@@ -1,6 +1,12 @@
 package assg1p2;
 
-public class TrainLine {
+public class TrainLine
+{
+    /**
+     * TrainLine Class contains all information for a specific train line
+     *
+     */
+
 
     private String code;
     private String name;
@@ -21,20 +27,22 @@ public class TrainLine {
 
     /* Getters */
     public String getCode() { return this.code; }
+
     public String getName() { return this.name; }
+
     public String getStart() { return this.start; }
+
     public String getEnd() { return this.end; }
+
     public int getStationCount() { return this.stationCount; }
+
     public String[] getStations() { return this.stations; }
+
     public String getStation(int index) { return this.stations[index]; }
 
 
-    /*  */
-    public void addStation(int index, String station)
-    {
-        //System.out.println(this.code + " - " + station + " " + index);
-        this.stations[index] = station;
-    }
+    /* Method to add a station to the line's list */
+    public void addStation(int index, String station) { this.stations[index] = station; }
 
     /* compareTo method since we are implementing Comparable */
     public int compareTo(TrainLine o) {

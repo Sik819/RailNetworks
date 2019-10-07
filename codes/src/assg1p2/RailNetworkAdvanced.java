@@ -450,9 +450,8 @@ public class RailNetworkAdvanced {
 	 * @param destination	the end station
 	 * @return				the route taken
 	 */
-
-	// !!!!WAS TESTING, NOT ACTUAL ALGORITHM!!!!
-	public ArrayList<String> routeMinStopWithRoutes(String origin, String destination) {
+	public ArrayList<String> routeMinStopWithRoutes(String origin, String destination)
+    {
 		if (!stationList.containsKey(origin) || !stationList.containsKey(destination))
 			return new ArrayList<>();
 
@@ -462,13 +461,13 @@ public class RailNetworkAdvanced {
 
 		Station originStation = stationList.get(origin);
 		Station destinationStation = stationList.get(destination);
+		String currentLine = ""; //initial line value is empty
 
 		//add original station
-		//pathFromOrigin.put(originStation, new ArrayList<>(List.of(origin)));
 		distanceFromOrigin.put(originStation, 0);
 
 		//launch recursion, true if track been found
-		if (routeMinStopWithRoutesRec(originStation, destinationStation, ""))
+		if (routeMinStopWithRoutesRec(originStation, destinationStation, currentLine))
 			return pathFromOrigin.get(destinationStation);
 
 		//if recursion returned false, nothing was found, return empty list
@@ -481,17 +480,18 @@ public class RailNetworkAdvanced {
 		if (origin.equals(destination))
 			return true;
 
-		//otherwise, set current origin to marked
 		origin.setMarked();
 
+		//get list of train lines the origin station is in
 		ArrayList<String> lines = origin.getTrainLines();
 
-		//modify distance to each neighbour
+		//iterate through the train line list
 		for(String line : lines)
 		{
 			//0 - one station forward, 1 - one station backwards
 			Station[] neighbours = new Station[2];
 
+			//put neighbour stations indexes, if out of bound will remain null
 			if (origin.getNumberByLine(line) + 1 <= lineList.get(line).getStationCount())
 				neighbours[0] = stationList.get(lineList.get(line).getStation(origin.getNumberByLine(line) + 1));
 
@@ -500,13 +500,13 @@ public class RailNetworkAdvanced {
 
 			for (Station neighbour : neighbours)
 			{
-				if (neighbour == null)
-					continue;
-
-				if (!distanceFromOrigin.containsKey(neighbour) || distanceFromOrigin.get(neighbour) > distanceFromOrigin.get(origin) + 1)
+			    //if neighbour exists and if either not in the list or distance to it would be better
+				if (neighbour != null && (!distanceFromOrigin.containsKey(neighbour) ||
+                        distanceFromOrigin.get(neighbour) > distanceFromOrigin.get(origin) + 1))
 				{
 					neighbour.setUnmarked();
 
+					//this condition will only apply for the initial call
 					ArrayList<String> list;
 					if (pathFromOrigin.containsKey(origin))
 					{
@@ -517,30 +517,30 @@ public class RailNetworkAdvanced {
 						list = new ArrayList<>();
 					}
 
-					int distanceTo = distanceFromOrigin.get(origin) + 1;
+					//if changing a train line, add direction to the list
 					if (currentLine.compareToIgnoreCase(line) != 0)
 					{
 						list.add(getLineDirection(line, origin, neighbour));
 						list.add(origin.getName());
-						//distanceTo++;
-						//currentLine = line;
 					}
-					list.add(neighbour.getName());
+					list.add(neighbour.getName());  //add this neighbour to the list
 
+                    //fill both path and distance lists with updated/new data
 					pathFromOrigin.put(neighbour, list);
-					distanceFromOrigin.put(neighbour, distanceTo);
+					distanceFromOrigin.put(neighbour, distanceFromOrigin.get(origin) + 1);
 				}
 			}
 		}
 
 		Boolean result = false;
 
-		//call each neighbour
+		//call recursively both neighbours for each train line station is in
 		for(String line : lines)
 		{
 			//0 - one station forward, 1 - one station backwards
 			Station[] neighbours = new Station[2];
 
+			//same code as above, just get indexes of the stations
 			if (origin.getNumberByLine(line) + 1 <= lineList.get(line).getStationCount())
 				neighbours[0] = stationList.get(lineList.get(line).getStation(origin.getNumberByLine(line) + 1));
 
@@ -549,22 +549,23 @@ public class RailNetworkAdvanced {
 
 			for (Station neighbour : neighbours)
 			{
-				if (neighbour == null)
-					continue;
-
-				if (!neighbour.isMarked())
-					result |= routeMinStopWithRoutesRec(neighbour, destination, line);
+			    //call only if exists and not marked
+				if (neighbour != null && !neighbour.isMarked())
+					result |= routeMinStopWithRoutesRec(neighbour, destination, line); //if true came from any iteration, result would be true
 			}
 		}
 		return result;
 	}
 
 	/**
+     * Given two stations in a order (current, next) and a train line
+     * these stations are on. Returns direction in a form
+     * <Line Name> towards <Line End> from <Line Start>
 	 *
 	 * @param line code of line the stations are on
 	 * @param origin current station
 	 * @param next next station
-	 * @return string with correct direction in a form <Line Name> towards <Line End> from <Line Start>
+	 * @return string with correct direction
 	 */
 	private String getLineDirection(String line, Station origin, Station next)
 	{
@@ -573,6 +574,7 @@ public class RailNetworkAdvanced {
 
 		TrainLine trainLine = lineList.get(line);
 		String result;
+
 		if (originIndex < nextIndex)
 		{
 			result = trainLine.getName() + " towards " + trainLine.getEnd() + " from " + trainLine.getStart();
@@ -581,6 +583,7 @@ public class RailNetworkAdvanced {
 		{
 			result = trainLine.getName() + " towards " + trainLine.getStart() + " from " + trainLine.getEnd();
 		}
+
 		return result;
 	}
 	
@@ -591,15 +594,6 @@ public class RailNetworkAdvanced {
 		String linesData = "codes/src/data/lines_data.csv";
 		RailNetworkAdvanced r = new RailNetworkAdvanced(stationData,connectionData,linesData);
 
-		/*
-		r.routeMinStopWithRoutes( "Chatswood", "Beecroft");
-		for(Map.Entry<Station,ArrayList<String>> path : r.pathFromOrigin.entrySet())
-		{
-			System.out.println(path.getValue());
-		}
-		*/
-
 		System.out.println(r.routeMinStopWithRoutes( "Blacktown", "Parramatta"));
-		//System.out.println(r.routeMinDistance("Blacktown", "Parramatta"));
 	}
 }
