@@ -523,7 +523,7 @@ public class RailNetworkAdvanced {
 						list.add(getLineDirection(line, origin, neighbour));
 						list.add(origin.getName());
 						//distanceTo++;
-						currentLine = line;
+						//currentLine = line;
 					}
 					list.add(neighbour.getName());
 
@@ -553,7 +553,7 @@ public class RailNetworkAdvanced {
 					continue;
 
 				if (!neighbour.isMarked())
-					result |= routeMinStopWithRoutesRec(neighbour, destination, currentLine);
+					result |= routeMinStopWithRoutesRec(neighbour, destination, line);
 			}
 		}
 		return result;
@@ -599,7 +599,7 @@ public class RailNetworkAdvanced {
 		}
 		*/
 
-		System.out.println(r.routeMinStopWithRoutes( "Wynyard", "Bondi Junction"));
+		System.out.println(r.routeMinStopWithRoutes( "Blacktown", "Parramatta"));
 		//System.out.println(r.routeMinDistance("Blacktown", "Parramatta"));
 	}
 }
