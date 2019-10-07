@@ -10,6 +10,8 @@ public class RailNetworkAdvanced {
 
 	private TreeMap<Station, ArrayList<String>> pathFromOrigin;
 	private TreeMap<Station, Integer> distanceFromOrigin;
+	private TreeMap<String,TreeMap<String,Integer>> getMinDistFromOrigin = new TreeMap<>();
+	   
 
 	public RailNetworkAdvanced(String trainData, String connectionData, String linesData)
 	{
@@ -276,90 +278,104 @@ public class RailNetworkAdvanced {
 		return result;
 	}
 
-	/**
-	 * The method finds the shortest route (in terms of distance travelled)
-	 * between the origin station and the destination station.
-	 * The route is returned as an ArrayList<String> containing the names of
-	 * the stations along the route, including the origin and the destination
-	 * stations.
-	 *
-	 * If the route cannot be completed (there is no path between origin and
-	 * destination), then return an empty ArrayList<String>
-	 *
-	 * If the origin or the destination stations are not in the list of stations,
-	 * return an empty ArrayList<String>.
-	 *
-	 * If the origin and the destination stations are the same, return an
-	 * ArrayList<String> containing the station.
-	 *
-	 * @param origin		the starting station
-	 * @param destination	the destination station
-	 * @return
-	 */
-	public ArrayList<String> routeMinDistance(String origin, String destination)
-	{
-		//check if both stations exist on the graph
-		if (!stationList.containsKey(origin) || !stationList.containsKey(destination))
-			return new ArrayList<>();
 
-		//clear data sets
-		pathFromOrigin.clear();
-		distanceFromOrigin.clear();
+	/********************************STAGE 3*****************************************/
+	public Station nearestStation(HashMap<Station, Integer> foundStations) {
+        int smallest = Integer.MAX_VALUE;
+        Station nearestStation = null; 
+        for(Station s : foundStations.keySet()) {
+                if(!s.isMarked() && foundStations.get(s)<smallest) {
+                    smallest = foundStations.get(s);
+                    nearestStation = s;
+                }
+                   
+            }
+        return nearestStation;
+    }
+   
+   
+   
+    public void unMarkAll() {
+        for(Station s: stationList.values())
+            s.setUnmarked();
+    }
+   
+    public void dijkstra(String origin){
+        if (!stationList.containsKey(origin)) {
+    		return;
+        }
+        
+        //Initialisation
+        Queue<Station> q = new LinkedList<Station>();
+        TreeMap<Station, Integer> distance = new TreeMap<>();
+        HashMap<Station,Integer> foundStations = new HashMap<>();
+        
+        //Population
+        for(Station s : stationList.values()) {
+        	s.setUnmarked();
+            if(s.equals(stationList.get(origin))) {
+                distance.put(s,0);
+                foundStations.put(s,0);
+                if(!getMinDistFromOrigin.containsKey(origin))
+                getMinDistFromOrigin.put(origin,new TreeMap<String,Integer>());
+               
+            }
+            else {
+                distance.put(s,Integer.MAX_VALUE);
+            }
+            q.add(s);
+        }
+        
+        //Algorithm
+        while(!q.isEmpty()) {
+            Station u = nearestStation(foundStations);
+            
+            q.remove(u);
+            foundStations.remove(u);
+            u.setMarked();
 
-		Station originStation = stationList.get(origin);
-		Station destinationStation = stationList.get(destination);
+            Iterator<Station> iter = u.getAdjacentStations().keySet().iterator();
+            while(iter.hasNext()) {
+                Station neighbour= iter.next();
+                if(q.contains(neighbour)) {
+                    int alt = distance.get(u) + u.getAdjacentStations().get(neighbour);
+                    if(alt < distance.get(neighbour)) {
+                        distance.put(neighbour,alt);
+                        foundStations.put(neighbour,alt);
+                        
+                        //Put Distance source->Dest in the lookup table
+                        getMinDistFromOrigin.get(origin).put(neighbour.getName(),distance.get(neighbour));
+                        //Put distance Dest-->Source in the lookup table
+                        if(!getMinDistFromOrigin.containsKey(neighbour.getName())) getMinDistFromOrigin.put(neighbour.getName(),new TreeMap<String,Integer>());
+                        getMinDistFromOrigin.get(neighbour.getName()).put(origin,distance.get(neighbour));
+                       
+                    }            
+                }
+            }
+        }
+        
+        
+}
+   
+   
+   
+   
+    /**
+     * Given a route between two stations, compute the total distance
+     * of this route.
+     *
+     * @param path  the list of stations in the route (as String objects)
+     * @return      the length of the route between the first station
+     *              and last station in the list   
+     */
+ 
+    public int optimisedDistance(String origin,String destination) {
+    	if(!getMinDistFromOrigin.containsKey(origin)|| !getMinDistFromOrigin.get(origin).containsKey(destination)) {
+    		dijkstra(origin);
+    	}
 
-		//add original station
-		pathFromOrigin.put(originStation, new ArrayList<>(List.of(origin)));
-		distanceFromOrigin.put(originStation, 0);
-
-		//launch recursion, true if track been found
-		if (routeMinDistanceRec(originStation, destinationStation, new TreeSet<>()))
-			return pathFromOrigin.get(destinationStation);
-
-		//if recursion returned false, nothing was found, return empty list
-		return new ArrayList<>();
-	}
-
-	private Boolean routeMinDistanceRec(Station origin, Station destination, TreeSet<String> failures)
-	{
-		//if we're on dest already, return true
-		if (origin.equals(destination))
-			return true;
-
-		//otherwise, set current origin to marked
-		origin.setMarked();
-
-		TreeMap<Station, Integer> neighbours = origin.getAdjacentStations();
-
-		//modify distance to each neighbour
-		for(Map.Entry<Station,Integer> neighbour : neighbours.entrySet())
-		{
-			if (!pathFromOrigin.containsKey(neighbour.getKey()) ||
-					distanceFromOrigin.get(neighbour.getKey()) > distanceFromOrigin.get(origin) + neighbour.getValue())
-			{
-				neighbour.getKey().setUnmarked();
-
-				ArrayList<String> list = new ArrayList<>(pathFromOrigin.get(origin));
-				list.add(neighbour.getKey().getName());
-
-				int distance = distanceFromOrigin.get(origin) + neighbour.getValue();
-
-				pathFromOrigin.put(neighbour.getKey(), list);
-				distanceFromOrigin.put(neighbour.getKey(), distance);
-			}
-		}
-
-		Boolean result = false;
-
-		//call each neighbour
-		for(Map.Entry<Station,Integer> neighbour : neighbours.entrySet())
-		{
-			if (!neighbour.getKey().isMarked() && !failures.contains(neighbour.getKey().getName()))
-				result |= routeMinDistanceRec(neighbour.getKey(), destination, failures);
-		}
-		return result;
-	}
+    	return getMinDistFromOrigin.get(origin).get(destination);
+        }
 	
 	/**
 	 * Given a route between two stations, compute the total distance 
@@ -406,10 +422,10 @@ public class RailNetworkAdvanced {
 	 * @param destination 	the ending station
 	 * @return	s			the ratio d1/d2 as explained above
 	 */
-	public double computeRatio(String origin, String destination) {
-		return 0.0;
-	}
-	
+	 public double computeRatio(String origin, String destination) {
+	        return (double) optimisedDistance(origin,destination)/computeDistance(origin,destination);
+	    }
+	   
 	
 	/**
 	 * Return the ratio as computed by computeRatio() method for all 
@@ -423,8 +439,28 @@ public class RailNetworkAdvanced {
 	 * @return a hashmap containing the ratios
 	 */
 	public HashMap<String,HashMap<String,Double>> computeAllRatio() {
-		return null;
-	}
+		HashMap<String,HashMap<String,Double>> hMap = new HashMap<>();
+        ArrayList<String> k = new ArrayList<String>(stationList.keySet()); // get all stations in a list
+        for(int i=0;i<k.size();i++) {
+        	
+            HashMap<String,Double> h = null;
+            if(!hMap.containsKey(k.get(i))) h= new HashMap<String,Double>();
+            else h = hMap.get(k.get(i));
+            for(int j=i+1;j<k.size();j++) {
+            	HashMap<String,Double> z = null;
+            	if(!hMap.containsKey(k.get(j))) z = new HashMap<String,Double>();
+                else z = hMap.get(k.get(j));
+                
+            	//compute ratio of between station i and j
+            	double d = computeRatio(k.get(i),k.get(j));
+                h.put(k.get(j),d);
+                z.put(k.get(i),d);
+                //ratio (i,j) == ratio(j,i)
+                hMap.put(k.get(i),h);
+                hMap.put(k.get(j),z);
+            }
+        }
+        return hMap;}
 	
 	/**
 	 * The method finds the shortest route (in terms of number of stops)
@@ -589,9 +625,9 @@ public class RailNetworkAdvanced {
 	
 	public static void main(String[] args)
 	{
-		String stationData = "codes/src/data/station_data.csv";
-		String connectionData = "codes/src/data/adjacent_stations.csv";
-		String linesData = "codes/src/data/lines_data.csv";
+		String stationData = "src/data/station_data.csv";
+		String connectionData = "src/data/adjacent_stations.csv";
+		String linesData = "src/data/lines_data.csv";
 		RailNetworkAdvanced r = new RailNetworkAdvanced(stationData,connectionData,linesData);
 
 		System.out.println(r.routeMinStopWithRoutes( "Blacktown", "Parramatta"));
